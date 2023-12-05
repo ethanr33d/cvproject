@@ -1,3 +1,5 @@
+from draw_rectangle import draw_rectangle
+import cv2
 annotations = [
     {'photo_file_name': 'clintonAD2505_468x448.jpg', 'faces': [[146, 226, 96, 176], [56, 138, 237, 312]]},
     {'photo_file_name': 'DSC01181.JPG', 'faces': [[141, 181, 157, 196], [144, 184, 231, 269]]},
@@ -28,6 +30,7 @@ for annotation in annotations:
 
     print(f"Processing {photo_file_name} with {len(faces)} faces")
 
+    img = cv2.imread("/workspaces/cvproject/data/test_face_photos/" + photo_file_name)
     # Process each face
     for face in faces:
         top, bottom, left, right = face
@@ -37,4 +40,7 @@ for annotation in annotations:
 
         # Here you can add code to handle each face, such as drawing bounding boxes,
         # cropping the face region from the image, etc.
+        img = draw_rectangle(img, top, bottom, left, right)
+    
+    cv2.imwrite("/workspaces/cvproject/output/" + photo_file_name,img)
 
