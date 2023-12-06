@@ -1,5 +1,6 @@
 from draw_rectangle import draw_rectangle
 import cv2
+
 annotations = [
     {'photo_file_name': 'clintonAD2505_468x448.jpg', 'faces': [[146, 226, 96, 176], [56, 138, 237, 312]]},
     {'photo_file_name': 'DSC01181.JPG', 'faces': [[141, 181, 157, 196], [144, 184, 231, 269]]},

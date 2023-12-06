@@ -25,7 +25,7 @@ def get_training_sets(scale):
         nonface_gray = cv2.imread(nonfaces_directory + "/" + nonface_file, cv2.IMREAD_GRAYSCALE)
         nonface_len = nonface.shape[0]
         nonface_wid = nonface.shape[1]
-        window_size = int(100 * scale)
+        window_size = int(60 * scale)
         local_nonface_count = 0
         
         # while max number for this image hasnt been reached and global max hasn't been reached make windows
@@ -36,29 +36,31 @@ def get_training_sets(scale):
             local_nonface_count += 1
             nonface_num += 1
 
+    num = 0
     # get faces and resize based on scale
     for face_file in face_files:
         face = cv2.imread(faces_directory + "/" + face_file, cv2.IMREAD_GRAYSCALE)
+        face = face[30:90, 20:80]
         resized_face = cv2.resize(face, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
         training_faces_grayscale.append(resized_face)
+        # cv2.imwrite("/workspaces/cvproject/cropped_trains/pic" + str(num) + ".jpg", face)
+        # num+=1
 
     
     return training_faces_grayscale, training_nonfaces_grayscale
 
 #get desired scale training images from get_training_sets
-#three different models are trained for each scale
+#two different models are trained for each scale
 
 
-f_25px, nf_25px = get_training_sets(.25) #returns 25x25px images for training
-print("25 px training sets recieved!")
-train_scaled_model(f_25px,nf_25px , 25)
+f_40px, nf_40px = get_training_sets(.67) #returns 40x40px images for training
+print("40 px training sets recieved!")
+train_scaled_model(f_40px,nf_40px , 40)
 
-f_50px, nf_50px = get_training_sets(.5)#returns 50x50px images for training
-print("50 px training sets recieved!")
-train_scaled_model(f_50px, nf_50px,50)
+f_60px, nf_60px = get_training_sets(1)#returns 60x60px images for training
+print("60 px training sets recieved!")
+train_scaled_model(f_60px, nf_60px,60)
 
-f_100px, nf_100px = get_training_sets(1)#returns 100x100px images for training
-print("100 px training sets recieved!")
-train_scaled_model(f_100px, nf_100px, 100)
+
 
 

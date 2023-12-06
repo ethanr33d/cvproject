@@ -8,6 +8,19 @@ from config import data_directory, training_directory
 #positions is a list of coordinates(y,x)
 #scores is a list of adaboost scores in parallel index with positions list
 def filter_detected_windows(positions, scores):
+    """
+    Removes all overlapping bounding boxes, leaving only the boxes with the highest score(in that area)
+    to be printed to the image
+
+    Args:
+        positions: list of tuples(y,x,scale(image size)).
+        scores: a parallel list of boost scores in accordance with the passed positions
+
+    Returns:
+         best_position_array: the final and filtered list of the tuples(y,x,scale(image size)) (these windows had the highest score and removed all overlapping windows)
+         best_scores_array: in parallel with the best position array, holds the boost scores of each tuple(window)
+
+    """
     best_position_array  = []
     best_scores_array = []
     working_positions_array = np.copy(positions)
@@ -29,8 +42,9 @@ def filter_detected_windows(positions, scores):
         best_pos_left = best_position[1]
         best_pos_top = best_position[0]
         best_scale = best_position[2]
-        best_pos_right = best_pos_left + int(100 * best_scale)
-        best_pos_bottom = best_pos_top + int(100 * best_scale)
+        best_pos_right = best_pos_left + int(60 * best_scale)
+        best_pos_bottom = best_pos_top + int(60 * best_scale)
+
         # go through remaining boxes and compare them to the box with the best score
         # then check if the working box is overlapping at any point with the best boz and if it IS overlapping, no longer consider it (deletion)
         for posIndex in range(len(working_positions_array)):
@@ -39,12 +53,12 @@ def filter_detected_windows(positions, scores):
             current_pos_left = position[1]
             current_pos_top = position[0]
             current_scale = position[2]
-            current_pos_right = current_pos_left + int(100 * current_scale)
-            current_pos_bottom = current_pos_top + int(100 * current_scale)
+            current_pos_right = current_pos_left + int(60 * current_scale)
+            current_pos_bottom = current_pos_top + int(60 * current_scale)
             
             # check if working box is overlapping with best box, if they are NOT overlapping, then let worker box pass into next iteration
             if not (current_pos_left < best_pos_right and current_pos_right > best_pos_left
-               and current_pos_top < best_pos_bottom and current_pos_bottom > current_pos_top):
+               and current_pos_top < best_pos_bottom and current_pos_bottom > best_pos_top):
                 filtered_positions.append(position)
                 filtered_scores.append(working_scores_array[posIndex])
         

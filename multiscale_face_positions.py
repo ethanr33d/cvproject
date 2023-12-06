@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import random
+from draw_rectangle import draw_rectangle
 from cascade import cascade
 from skin_detection import detect_skin
 from filter_detected_windows import filter_detected_windows
@@ -7,13 +9,32 @@ from filter_detected_windows import filter_detected_windows
 positive_histogram = np.load("positive_histogram.npy")
 negative_histogram = np.load("negative_histogram.npy")
 skin_threshold = 0.3
-pixel_granularity = 1
+pixel_granularity = 3
 
-def multiscale_face_positions(gray_image, color_image, boosted_classifier, weak_classifiers, cascade_classifiers_list, cascade_threshold_list, scale):
+def multiscale_face_positions(gray_image, color_image, model, weak_classifiers, cascade_classifiers_list, cascade_threshold_list, scale, filename):
+    """
+    Adjusts images based on scale, filters out windows that have no skin, 
+        cascades remaining windows of that image, then returns best face positions(coordinates on original image) and the scores(boost) of those windows
+
+    Args:
+        gray_image: grayscale version of color_image
+        color_image: colored image
+        model: model(based on scale)
+        weak_classifiers: weak classifiers in accordance to the model(scale)
+        cascade_classifiers_list: list of how many classifiers will be used for boost_predict cascade
+        cascade_threshold_list: list of thresholds used in each cascade stage
+        scale: scaled of image (40x40px or 60x60px)
+        filename: used for naming outputted images(mostly for debug)
+
+    Returns:
+         face_positions: list of best windows: tuple(y,x,scale) - coordinates of window and its scale
+         scores: a parralel list synced with face_positions - giving the boost_predict score of that window
+
+    """
     skin_scores = detect_skin(color_image, positive_histogram, negative_histogram)
     gray_windows = []
     windowinfo = [] # parallel array that stores the position in the real image of top left corner of each window 
-    window_size = int(100 * scale)
+    window_size = int(60 * scale)
     real_skin_threshold = int(window_size * window_size * skin_threshold)
 
     # make windows of size 100x100
@@ -27,33 +48,46 @@ def multiscale_face_positions(gray_image, color_image, boosted_classifier, weak_
                 windowinfo.append((i,j, scale)) # store the position of the top left corner of window in parallel array
             
     
-    print("i made ", len(gray_windows), " windows!!!")
+    print(len(gray_windows), " windows passed skin detection windows!!!")
 
+    result_image2 = np.copy(color_image)
+
+    for i in range(len(gray_windows)):
+        face_pos = windowinfo[i]
+        top = int(face_pos[0])
+        left = int(face_pos[1])
+        scaled = int(face_pos[2] * 60)
+        draw_rectangle(result_image2, top, top + scaled, left, left + scaled) # draw bounding box
+    isZero = "ZERO" if len(gray_windows) == 0 else ""
+    cv2.imwrite("/workspaces/cvproject/skin_photos/" + filename + str(scale) + isZero + ".jpg", cv2.cvtColor(result_image2, cv2.COLOR_BGR2RGB))
     # run face detection
     face_windows, face_scores = cascade(gray_windows, 
-                           boosted_classifier,
+                           model,
                            weak_classifiers, 
                            cascade_classifiers_list, 
                            cascade_threshold_list, 
                            )
 
-    
     # gather positions of detected windows
     detection_positions = []
     for face_window_index in face_windows:
         detection_positions.append(windowinfo[face_window_index])
 
-    from draw_rectangle import draw_rectangle
-    import random
-
     result_image = np.copy(color_image)
     face_positions, scores = filter_detected_windows(detection_positions, face_scores)
+    
+    for face_pos in detection_positions:
+        top = int(face_pos[0])
+        left = int(face_pos[1])
+        scaled = int(face_pos[2] * 60)
+        draw_rectangle(result_image, top, top + scaled, left, left + scaled) # draw bounding box
+
+
     for face_pos in face_positions:
         top = int(face_pos[0])
         left = int(face_pos[1])
-        scale = int(face_pos[2] * 100)
-        draw_rectangle(result_image, top, top + scale, left, left + scale) # draw bounding box
+        scaled = int(face_pos[2] * 60)
+        draw_rectangle(result_image, top, top + scaled, left, left + scaled, (255,0,0)) # draw bounding box
+    cv2.imwrite("/workspaces/cvproject/bounding_photos/" + filename + str(scale) + ".jpg", cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
 
-    cv2.imwrite("/workspaces/cvproject/photo" + str(random.randint(0,1000)) + ".jpg", cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
-    #return filter_detected_windows(detection_positions, face_scores)
     return face_positions, scores

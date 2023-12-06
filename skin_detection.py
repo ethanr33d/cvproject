@@ -36,15 +36,3 @@ def detect_skin(image, positive_histogram, negative_histogram):
     result = np.divide(skin_values, total, out=np.zeros_like(skin_values), where=total!=0)
     
     return result
-
-import cv2
-positive = np.load("positive_histogram.npy")
-negative = np.load("negative_histogram.npy")
-tester = cv2.imread("/workspaces/cvproject/data/test_face_photos/DSC03292.JPG", cv2.IMREAD_COLOR)
-tester = cv2.cvtColor(tester, cv2.COLOR_BGR2RGB)
-tester = tester[80:180, 164:264]
-res = (detect_skin(tester, positive, negative) >= 0.5).sum()
-tester = cv2.cvtColor(tester, cv2.COLOR_RGB2BGR)
-cv2.imwrite("/workspaces/cvproject/testimg.jpg", tester)
-print(res)
-

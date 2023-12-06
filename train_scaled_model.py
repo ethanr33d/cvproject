@@ -35,7 +35,7 @@ def train_scaled_model(passed_faces, passed_nonfaces, scale):
     face_horizontal = scale
 
     # Define the number of weak classifiers to generate
-    number = 7777
+    number = 5000
 
     # Generate the list of weak classifiers
     weak_classifiers = [generate_classifier(face_vertical, face_horizontal) for _ in range(number)]
@@ -85,7 +85,7 @@ def train_scaled_model(passed_faces, passed_nonfaces, scale):
             classifier = weak_classifiers[feature]
             responses[example, feature] = eval_weak_classifier(classifier, integral)
 
-    num_rounds = 25  # Define the number of rounds
+    num_rounds = 28  # Define the number of rounds
 
     boosted_classifier = adaboost(responses, labels, num_rounds)  # Run the AdaBoost algorithm
 

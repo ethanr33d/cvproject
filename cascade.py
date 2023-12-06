@@ -9,6 +9,22 @@ from boosting import boosted_predict
 
 
 def cascade(gray_faces, model, weak_classifiers, cascade_classifiers_list, cascade_threshold_list):
+    """
+    recieves a list of windows from an image, runs the list through the adaboost cascade, returns the indicies and scores(adaboost)
+        of the windows that made it through the entire cascade
+
+    Args:
+        gray_faces: list of gray images.
+        model: model(based on scale)
+        weak_classifiers: weak classifiers in accordance to the model(scale)
+        cascade_classifiers_list: list of how many classifiers will be used for boost_predict
+        cascade_threshold_list: list of thresholds used in each cascade stage
+
+    Returns:
+         filtered_indicies: returns the indexes of the windows it was given that pass the cascade
+         filtered_scores: in parallel with indicies, returns the scores off those windows that passed the cascade
+
+    """
     cur_threshold_index = 0
     filtered_gray_faces = gray_faces
     filtered_indicies = range(len(gray_faces))
@@ -33,7 +49,7 @@ def cascade(gray_faces, model, weak_classifiers, cascade_classifiers_list, casca
                 scores_passed_round.append(face_prediction)
 
         # iterate threshold (e.g raising the threshold each wave)
-        print("there are now ", len(gray_passed_round), " windows remaining")
+        print("there are now ", len(gray_passed_round), " windows remaining after cascade stage:" , cur_threshold_index + 1,)
         cur_threshold_index += 1
         filtered_gray_faces = gray_passed_round
         filtered_indicies = indicies_passed_round
