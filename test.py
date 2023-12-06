@@ -8,6 +8,7 @@ from boosting import boosted_predict
 from cascade import cascade
 from draw_rectangle import draw_rectangle
 from filter_detected_windows import filter_detected_windows
+from multiscale_face_positions import multiscale_face_positions
 
 # Get test data
 nonfaces_directory = data_directory + "/test_nonfaces"
@@ -36,21 +37,43 @@ for nonface_file in nonface_files:
 for face_file in cropped_face_files:
     test_cropped_faces_grayscale.append(cv2.imread(cropped_faces_directory + "/" + face_file, cv2.IMREAD_GRAYSCALE))
 
+pure_photos = []
+# get rid of pesky face_annotations file
 for face_file in photo_face_files:
     if face_file != "face_annotations.py":
-        color_img = cv2.imread(photo_faces_directory + "/" + face_file)
-        test_photos_faces.append(cv2.cvtColor(color_img, cv2.COLOR_BGR2RGB))
-        test_photos_faces_grayscale.append(cv2.imread(photo_faces_directory + "/" + face_file, cv2.IMREAD_GRAYSCALE))
+        pure_photos.append(face_file)
+
+photo_face_files = pure_photos
+
+for face_file in photo_face_files:
+    color_img = cv2.imread(photo_faces_directory + "/" + face_file)
+    test_photos_faces.append(cv2.cvtColor(color_img, cv2.COLOR_BGR2RGB))
+    test_photos_faces_grayscale.append(cv2.imread(photo_faces_directory + "/" + face_file, cv2.IMREAD_GRAYSCALE))
     
 ################################################################################################
 #MODEL EXTRACTION FROM STORED PICKLES
 #grab the saved weakclassifiers
-with open(training_directory + "/classifiers.pkl", "rb") as f:
-    weak_classifiers= pickle.load(f)
+with open(training_directory + "/classifiers_scale_100.pkl", "rb") as f:
+    weak_classifiers_100= pickle.load(f)
 
-boosted_classifier = []
-with open(training_directory + "/model.pkl", "rb") as f:
-    boosted_classifier = pickle.load(f)
+with open(training_directory + "/classifiers_scale_50.pkl", "rb") as f:
+    weak_classifiers_50= pickle.load(f)
+    
+with open(training_directory + "/classifiers_scale_25.pkl", "rb") as f:
+    weak_classifiers_25= pickle.load(f)
+
+boosted_classifier_100 = []
+with open(training_directory + "/model_scale_100.pkl", "rb") as f:
+    boosted_classifier_100 = pickle.load(f)
+
+boosted_classifier_50 = []
+with open(training_directory + "/model_scale_50.pkl", "rb") as f: 
+    boosted_classifier_50 = pickle.load(f)
+
+boosted_classifier_25 = []
+with open(training_directory + "/model_scale_25.pkl", "rb") as f: 
+    boosted_classifier_25 = pickle.load(f)
+
 
 ################################################################################################
 #RUNNING MODEL ON GREYSCALE CROPPED IMAGES
@@ -72,8 +95,8 @@ filtered_nonfaces = np.copy(gray_nonfaces)
 for num_classifiers in num_classifiers_list:
 
     #call boosted_predct with current amount of classifiers
-    face_predictions = boosted_predict(filtered_faces, boosted_classifier, weak_classifiers, num_classifiers)
-    nonface_predictions = boosted_predict(filtered_nonfaces, boosted_classifier, weak_classifiers, num_classifiers)
+    face_predictions = boosted_predict(filtered_faces, boosted_classifier_100, weak_classifiers_100, num_classifiers)
+    nonface_predictions = boosted_predict(filtered_nonfaces, boosted_classifier_100, weak_classifiers_100, num_classifiers)
 
     face_response_threshold = threshold_list[cur_threshold_index]
     # iterate threshold (e.g raising the threshold each wave)
@@ -110,8 +133,9 @@ positive_histogram = np.load("positive_histogram.npy")
 negative_histogram = np.load("negative_histogram.npy")
 
 # Adjust these lists for thresholds and number of used classfiers
-num_classifiers_list = [3, 5, 15]
+num_classifiers_list = [3, 20, 50]
 threshold_list = [-3, -1.25, 0]
+
 
 # def cascade(gray_faces, color_faces, weak_classifiers, cascade_classifiers_list, cascade_threshold_list)
 # it returns the indicies of the windows that are faces
@@ -124,52 +148,71 @@ threshold_list = [-3, -1.25, 0]
 
 # for each image make windows, run face detection, and interpret results
 for imgindex in range(len(test_photos_faces)):
+    print("running ", photo_face_files[imgindex])
     gray_image = test_photos_faces_grayscale[imgindex]
     color_image = test_photos_faces[imgindex]
     result_image = np.copy(color_image)
-    gray_windows = []
-    color_windows = []
-    windowinfo = [] # parallel array that stores the position in the real image of top left corner of each window 
-
-    # make windows of size 100x100
-    for i in range(gray_image.shape[0] - 100):
-        for j in range(gray_image.shape[1] - 100):
-            gray_windows.append(gray_image[i:i+100, j:j+100])
-            color_windows.append(color_image[i:i+100, j:j+100])
-            windowinfo.append((i,j)) # store the position of the top left corner of window in parallel array
     
-    print("i made ", len(gray_windows), " windows!!!")
-    # run face detection
-    face_windows, face_scores = cascade(gray_windows, 
-                           color_windows, 
-                           boosted_classifier,
-                           weak_classifiers, 
+    # gather face positions for 3 different scales
+    # EACH FUNCTION RECIEVES ITS OWN MODEL TRAINED ON THE SPECIFIED SCALE
+    face_positions_25px, face_scores_25px = multiscale_face_positions(gray_image, 
+                           color_image,
+                           boosted_classifier_25, #specific model to 25x25px models
+                           weak_classifiers_25, 
                            num_classifiers_list, 
                            threshold_list, 
-                           positive_histogram, 
-                           negative_histogram
+                           0.25
                            )
-
+    face_positions_50px, face_scores_50px = multiscale_face_positions(gray_image, 
+                           color_image,
+                           boosted_classifier_50,#specific model to 50x50px models
+                           weak_classifiers_50, 
+                           num_classifiers_list, 
+                           threshold_list, 
+                           0.5
+                           )
+    face_positions_100px, face_scores_100px = multiscale_face_positions(gray_image, 
+                           color_image, 
+                           boosted_classifier_100,#specific model to 100x100px models
+                           weak_classifiers_100, 
+                           num_classifiers_list, 
+                           threshold_list, 
+                           1
+                           )
     
-    # gather positions of detected windows
-    detection_positions = []
-    for face_window_index in face_windows:
-        detection_positions.append(windowinfo[face_window_index])
-    
-
-    # filter out overlapping boxes
-    face_positions = filter_detected_windows(detection_positions, face_scores)
-
+    # concatenate the best face positions for all 3 scales
+    all_face_positions = face_positions_25px + face_positions_50px + face_positions_100px
+    # print("concatenated face positions " , all_face_positions)
+    all_face_scores = face_scores_25px + face_scores_50px + face_scores_100px
+    # print("concatenated face scores " , all_face_scores)
+    # run one last time to find the best of the 3 scales
+    face_positions, _ = filter_detected_windows(all_face_positions, all_face_scores)
+    print("An image finshed!! ==============================================")
+    # print("final list: ", face_positions)
     # write resulting face windows to file
+    # for face_pos in face_positions_25px:
+    #     top = int(face_pos[0])
+    #     left = int(face_pos[1])
+    #     scale = int(face_pos[2] * 100)
+    #     draw_rectangle(result_image, top, top + scale, left, left + scale) # draw bounding box
+    # for face_pos in face_positions_50px:
+    #     top = int(face_pos[0])
+    #     left = int(face_pos[1])
+    #     scale = int(face_pos[2] * 100)
+    #     draw_rectangle(result_image, top, top + scale, left, left + scale) # draw bounding box
+    # for face_pos in face_positions_100px:
+    #     top = int(face_pos[0])
+    #     left = int(face_pos[1])
+    #     scale = int(face_pos[2] * 100)
+    #     draw_rectangle(result_image, top, top + scale, left, left + scale) # draw bounding box
     for face_pos in face_positions:
-        top = face_pos[0]
-        left = face_pos[1]
-        draw_rectangle(result_image, top, top + 100, left, left + 100) # draw bounding box
+        top = int(face_pos[0])
+        left = int(face_pos[1])
+        scale = int(face_pos[2] * 100)
+        draw_rectangle(result_image, top, top + scale, left, left + scale) # draw bounding box
 
     cv2.imwrite("/workspaces/cvproject/photo_output/" + photo_face_files[imgindex], cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
     
-# filter_detected_windows(positions, scores)
-# returns the positions of the best array 
 
 # # Print the results
 # print(f"Greyscale Face accuracy: {face_accuracy}")
