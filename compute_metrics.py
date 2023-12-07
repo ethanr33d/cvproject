@@ -25,6 +25,8 @@ annotations = [
     {'photo_file_name': 'phil-jackson-and-michael-jordan.jpg', 'faces': [[34, 75, 58, 92], [32, 75, 152, 193]]},
     {'photo_file_name': 'the-lord-of-the-rings_poster.jpg', 'faces': [[222, 267, 0, 35], [129, 170, 6, 40], [13, 81, 26, 84], [22, 92, 120, 188], [35, 94, 225, 276], [190, 255, 235, 289], [301, 345, 257, 298]]}
 ]
+
+#return integer value of intersection between two rectangles
 def intersection_area(r1_dims, r2_dims):
     r1_top, r1_bottom, r1_left, r1_right = r1_dims
     r2_top, r2_bottom, r2_left, r2_right = r2_dims
@@ -38,8 +40,12 @@ def intersection_area(r1_dims, r2_dims):
     intersection_y = length_y - abs(r1_bottom - r2_bottom) - abs(r1_top - r2_top)
     
     #area of intersection
+    if (intersection_x < 0 or intersection_y < 0):
+        return 0
+    
     return intersection_x * intersection_y
 
+#returns integer value of union between two rectangles
 def union_area(r1_dims, r2_dims):
     intersection = intersection_area(r1_dims, r2_dims)
     r1_top, r1_bottom, r1_left, r1_right = r1_dims
@@ -49,7 +55,7 @@ def union_area(r1_dims, r2_dims):
     r2_area = (r2_bottom - r2_top) * (r2_right -r2_left)
     
     # Union(r1,r2) = area_r1 + area_r2 - intersection(r1,r2)
-    return r1_area + r2_area - intersection 
+    return r1_area + r2_area - intersection
 
 def compute_metrics(query_annotations):
     """
@@ -66,38 +72,60 @@ def compute_metrics(query_annotations):
     total_faces = 0
     falsies = 0
     
+    # parallelize arrays
+    sorted_annotations = sorted(annotations, key=lambda x: x['photo_file_name'])
+    query_annotations = sorted(query_annotations, key=lambda x: x['photo_file_name'])
+
     # Iterate over the annotations
     for annotationIndex in range(len(annotations)):
-        correct_annotation = annotations[annotationIndex]
+        correct_annotation = sorted_annotations[annotationIndex]
         file_name = correct_annotation["photo_file_name"]
         query_annotation = query_annotations[annotationIndex]
-        visualization = cv2.imread(file_name)
+        visualization = cv2.imread(data_directory + "/test_face_photos/" + file_name)
 
         correct_faces = correct_annotation['faces']
-        query_faces = query_annotation['faces']*
+        query_faces = query_annotation['faces']
         total_faces += len(correct_faces)
         num_matches = 0
     
+        # visualize correct
         for face in correct_faces:
             top, bottom, left, right = face
             draw_rectangle(visualization, top, bottom, left, right, (0, 255, 0))
 
+        # for each potential match iterate over remaining correct faces
         for working_query in query_faces:
+            correct = False
+
+            # iterate over remaining correct faces
             for faceIndex in range(len(correct_faces)):
                 face = correct_faces[faceIndex]
                 union = union_area(working_query, face)
                 intersection = intersection_area(working_query, face)
+
                 # Intersection over Union (IoU) ratio. Mathematically IoU = (Area of Overlap) / (Area of Union) > 0.5.
                 IoU = (intersection)/(union)
                 if IoU > 0.5:
-                    del(correct_faces[faceIndex])
+                    del(correct_faces[faceIndex]) # face is matched, remove for future iterations
                     num_matches+=1
+                    correct = True
                     break
-                else:
-                    
+            
+            top, bottom, left, right = working_query
+
+            # visualization
+            if correct:
+                draw_rectangle(visualization, top, bottom, left, right, (255,0,0))
+            else:
+                draw_rectangle(visualization, top, bottom, left, right, (0,0,255))
+
         global_matches += num_matches
         falsies += (len(query_faces) - num_matches)
+        
+        # VISUALIZATION CODE - contains a hardcoded path to visualization folder, visualizes final result
+        #cv2.imwrite("/workspaces/cvproject/metrics_visual/" + file_name, visualization)
     
+    # compute accuracy
     accuracy = global_matches / total_faces
 
     print(total_faces)

@@ -33,9 +33,10 @@ for nonface_file in nonface_files:
         for j in range(0, nonface_shape[1] - 60, 60):
             test_nonfaces_grayscale.append(np.copy(nonface_gray[i:i+60, j:j+60]))
 
+# extract cropped faces
 for face_file in cropped_face_files:
     face = cv2.imread(cropped_faces_directory + "/" + face_file, cv2.IMREAD_GRAYSCALE)
-    face = face[30:90, 20:80]
+    face = face[30:90, 20:80] # crop the same way as in training
     test_cropped_faces_grayscale.append(face)
 
 pure_photos = []
@@ -46,14 +47,15 @@ for face_file in photo_face_files:
 
 photo_face_files = pure_photos
 
+# extract test_face_photos
 for face_file in photo_face_files:
     color_img = cv2.imread(photo_faces_directory + "/" + face_file)
     test_photos_faces.append(cv2.cvtColor(color_img, cv2.COLOR_BGR2RGB))
     test_photos_faces_grayscale.append(cv2.imread(photo_faces_directory + "/" + face_file, cv2.IMREAD_GRAYSCALE))
     
 ################################################################################################
-#MODEL EXTRACTION FROM STORED PICKLES
-#grab the saved weakclassifiers
+# MODEL EXTRACTION FROM STORED PICKLES
+# grab the saved weakclassifiers
 with open(training_directory + "/classifiers_scale_60.pkl", "rb") as f:
     weak_classifiers_60= pickle.load(f)
 
@@ -70,7 +72,7 @@ with open(training_directory + "/model_scale_40.pkl", "rb") as f:
 
 
 ################################################################################################
-#RUNNING MODEL ON GREYSCALE CROPPED IMAGES
+# RUNNING MODEL ON GREYSCALE CROPPED IMAGES
 
 # Load face and non-face data
 gray_faces = np.copy(test_cropped_faces_grayscale)
@@ -132,8 +134,9 @@ for imgindex in range(len(test_photos_faces)):
     color_image = test_photos_faces[imgindex]
     result_image = np.copy(color_image)
     file_name = photo_face_files[imgindex]
-    # gather face positions for 3 different scales
+    # gather face positions for 2 different scales
     # EACH FUNCTION RECIEVES ITS OWN MODEL TRAINED ON THE SPECIFIED SCALE
+    print("40x40 scale:")
     face_positions_40px, face_scores_40px = multiscale_face_positions(gray_image, 
                            color_image,
                            boosted_classifier_40,#specific model to 40x40px models
@@ -143,6 +146,7 @@ for imgindex in range(len(test_photos_faces)):
                            0.67,
                            file_name
                            )
+    print("60x60 scale:")
     face_positions_60px, face_scores_60px = multiscale_face_positions(gray_image, 
                            color_image, 
                            boosted_classifier_60,#specific model to 60x60px models
@@ -153,14 +157,13 @@ for imgindex in range(len(test_photos_faces)):
                            file_name
                            )
     
-    # concatenate the best face positions for all 3 scales
+    # concatenate the best face positions for all scales
     all_face_positions = face_positions_40px + face_positions_60px
-    # print("concatenated face positions " , all_face_positions)
     all_face_scores = face_scores_40px + face_scores_60px
-    # print("concatenated face scores " , all_face_scores)
-    # run one last time to find the best of the 3 scales
+
+    # run one last time to find the best of the 2 scales
     face_positions, _ = filter_detected_windows(all_face_positions, all_face_scores)
-    print("An image finshed!! ==============================================")
+    print(file_name, " finished ==============================================")
 
     annotation = {
         "photo_file_name": file_name,
@@ -178,7 +181,8 @@ for imgindex in range(len(test_photos_faces)):
         annotation["faces"].append([top, bottom, left, right])
 
     # write output image and add final annotation
-    cv2.imwrite("/workspaces/cvproject/photo_output/" + photo_face_files[imgindex], cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
+    # VISUALIZATION CODE - contains a hardcoded path to visualization folder, visualizes final result
+    # cv2.imwrite("/workspaces/cvproject/photo_output/" + photo_face_files[imgindex], cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
     result_annotations.append(annotation)
     
 

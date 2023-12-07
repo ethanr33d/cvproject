@@ -49,7 +49,7 @@ def cascade(gray_faces, model, weak_classifiers, cascade_classifiers_list, casca
                 scores_passed_round.append(face_prediction)
 
         # iterate threshold (e.g raising the threshold each wave)
-        print("there are now ", len(gray_passed_round), " windows remaining after cascade stage:" , cur_threshold_index + 1,)
+        print(" ", len(gray_passed_round), " windows remaining after cascade stage:" , cur_threshold_index + 1,)
         cur_threshold_index += 1
         filtered_gray_faces = gray_passed_round
         filtered_indicies = indicies_passed_round

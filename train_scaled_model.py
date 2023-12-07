@@ -1,5 +1,3 @@
-import cv2
-import os
 import pickle
 import numpy as np
 
@@ -46,7 +44,6 @@ def train_scaled_model(passed_faces, passed_nonfaces, scale):
         pickle.dump(weak_classifiers,f)
 
 
-    # faces and nonfaces are given as (2400, 100, 100) matrices (probably)
     # Initialize empty lists to store the integral images
     face_integrals = []
     nonface_integrals = []
@@ -116,7 +113,7 @@ def train_scaled_model(passed_faces, passed_nonfaces, scale):
     nonface_accuracy = np.sum(nonface_predictions < face_response_threshold) / len(nonface_predictions)
 
     # Print the results
-    print(f"Face accuracy for scale {scale}: {face_accuracy}")
-    print(f"Non-face accuracy for scale {scale}: {nonface_accuracy}")
+    print(f"TRAINING: Face accuracy for scale {scale} pixels: {face_accuracy}")
+    print(f"TRAINING: Non-face accuracy for scale {scale} pixels: {nonface_accuracy}")
 
     return

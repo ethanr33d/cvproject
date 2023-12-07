@@ -36,17 +36,13 @@ def get_training_sets(scale):
             local_nonface_count += 1
             nonface_num += 1
 
-    num = 0
     # get faces and resize based on scale
     for face_file in face_files:
         face = cv2.imread(faces_directory + "/" + face_file, cv2.IMREAD_GRAYSCALE)
         face = face[30:90, 20:80]
         resized_face = cv2.resize(face, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
         training_faces_grayscale.append(resized_face)
-        # cv2.imwrite("/workspaces/cvproject/cropped_trains/pic" + str(num) + ".jpg", face)
-        # num+=1
-
-    
+       
     return training_faces_grayscale, training_nonfaces_grayscale
 
 #get desired scale training images from get_training_sets
