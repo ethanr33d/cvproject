@@ -118,13 +118,9 @@ print("-------------------------")
 gray_faces = test_photos_faces_grayscale #greyscale for model usage
 colored_faces = test_photos_faces #still have color for skin detection
 
-# Load skin detection histograms
-positive_histogram = np.load("positive_histogram.npy")
-negative_histogram = np.load("negative_histogram.npy")
-
 # Adjust these lists for thresholds and number of used classfiers
-num_classifiers_list = [50]
-threshold_list = [3]
+num_classifiers_list = [3, 20, 50]
+threshold_list = [-3, 0, 3]
 
 result_annotations = []
 # for each image make windows, run face detection, and interpret results

@@ -1,3 +1,3 @@
-data_directory = '/workspaces/cvproject/data'; # no trailing slash
-code_directory = '/workspaces/cvproject';
-training_directory = '/workspaces/cvproject/training'; # no trailing slash
+data_directory = 'fill in appropriately'; # no trailing slash
+code_directory = 'fill in appropriately'; # no trailing slash
+training_directory = 'fill in appropriately'; # no trailing slash

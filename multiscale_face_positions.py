@@ -5,10 +5,11 @@ from draw_rectangle import draw_rectangle
 from cascade import cascade
 from skin_detection import detect_skin
 from filter_detected_windows import filter_detected_windows
+from config import training_directory
 
-positive_histogram = np.load("positive_histogram.npy")
-negative_histogram = np.load("negative_histogram.npy")
-skin_threshold = 0
+positive_histogram = np.load(training_directory + "/positive_histogram.npy")
+negative_histogram = np.load(training_directory + "/negative_histogram.npy")
+skin_threshold = 0.3
 pixel_granularity = 3
 
 def multiscale_face_positions(gray_image, color_image, model, weak_classifiers, cascade_classifiers_list, cascade_threshold_list, scale, filename):
