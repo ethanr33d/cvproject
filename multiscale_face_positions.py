@@ -8,7 +8,7 @@ from filter_detected_windows import filter_detected_windows
 
 positive_histogram = np.load("positive_histogram.npy")
 negative_histogram = np.load("negative_histogram.npy")
-skin_threshold = 0.3
+skin_threshold = 0
 pixel_granularity = 3
 
 def multiscale_face_positions(gray_image, color_image, model, weak_classifiers, cascade_classifiers_list, cascade_threshold_list, scale, filename):
